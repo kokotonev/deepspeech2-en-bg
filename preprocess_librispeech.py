@@ -1,5 +1,5 @@
 # Author: Nikola Tonev
-# Date: 1 March 2019
+# Date: March 2019
 
 import soundfile as sf
 

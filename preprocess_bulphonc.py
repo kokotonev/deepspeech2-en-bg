@@ -1,5 +1,5 @@
 # Author: Nikola Tonev
-# Date: 3 March 2019
+# Date: March 2019
 
 
 import os
