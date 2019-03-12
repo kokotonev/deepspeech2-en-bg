@@ -39,6 +39,23 @@ def pad_sequences(sequences, max_len):
 	return padded_sequences 
 
 
+# Creating a sparse tensor for the labels (returnin the 3 dense tensors that make up the sparse one)
+def sparse_tuple_from(sequences, dtype=np.int32):
+
+    indices = []
+    values = []
+
+    for n, seq in enumerate(sequences):
+        indices.extend(zip([n] * len(seq), range(len(seq))))
+        values.extend(seq)
+
+    indices = np.asarray(indices, dtype=np.int64)
+    values = np.asarray(values, dtype=dtype)
+    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1] + 1], dtype=np.int64)
+
+    return indices, values, shape
+
+
 
 def load_output_mapping(dataset):
 
