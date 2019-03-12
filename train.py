@@ -2,6 +2,7 @@
 # Date: March 2019
 
 import os
+import time
 import utils
 import shutil
 import numpy as np 
@@ -87,6 +88,16 @@ if __name__ == '__main__':
     # Specifying the processor on which the model will be trained
     device = '/cpu:0'
 
+    # Pulling some hyper-parameters from the config file
+    epochs = hparams.n_epochs
+    batch_sie = hparams.batch_size
+    steps_per_checkpoint = hparams.steps_per_checkpoint
+    checkpoints_dirpath = hparams.checkpoints_dirpath
+
+    if not os.path.exists(checkpoints_dirpath):
+    	os.makedirs(checkpoints_dirpath)
+
+    checkpoints_path = os.path.join(checkpoints_dirpath, 'checkpoint')
 
     # Creating a training model object
     with train_graph.as_default():
@@ -116,18 +127,16 @@ if __name__ == '__main__':
     train_sess = tf.Session(graph=train_graph)
     eval_sess = tf.Session(graph=eval_sess)
 
-
-    ##### TODO: 
-    #
-    # - Finish model initialization
-    # - Write script for executing the training process
+    # Initializing all variables in the model
+    train_sess.run(variables_initializer)
 
 
+    # Setting the global step and getting current time when training starts
+    global_step = 0
+    start_time = time.time()
 
-
-
-
-
+    # Saving the initial state of the model ---> saving all hyper-parameters and variables from the model
+    train_model.save(checkpoints_path, train_sess, global_step=0)
 
 
 
@@ -135,10 +144,64 @@ if __name__ == '__main__':
 
 
 
+	##################################
+    ####    TRAINING EXECUTION    ####
+    ##################################
+
+    print('Training...')
+
+    # Run until interrupted by the keyboard (user)
+    try:
+
+    	while epochs:
+
+    		# The number of the current epoch = total epoch from config file - epochs left to run
+    		current_epoch = hparams.n_epochs - epochs
+
+    		# Dividng the training data into batches and looping through them
+    		for i in range(int(len(train_audio)/batch_size)):
+
+    			batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
+    			batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
+
+    			# Returns the cost value and the summary
+    			cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
+
+    			# Updating the global step
+    			global_step += batch_size
+
+    			# Adding summary to the training logs
+    			training_logger.add_summary(summary, global_step=global_step)
+
+    			print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - start_time))
 
 
+    			# If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
+    			if global_step % steps_per_checkpoint == 0:
+
+    				print('Checkpointing... (Global step = {})'.format(global_step))
+
+    				# Saving a checkpoint after a certain number of iterations
+    				current_checkpoint = train_model.saver.save(train_sess, checkpoints_path, global_step=global_step)
+    				
+    				# Immediately restorint the saved model to evaluate it!
+    				eval_model.saver.restore(eval_sess, current_checkpoint)
+
+    				# EVALUATING THE MODEL AT CHECKPOINT
+    				ler, summary = eval_model.eval(batch_train_audio, batch_train_labels, eval_sess)
+
+    				# Adding summary to the evaluation logs
+    				eval_logger.add_summary(summary, global_step=global_step)
+
+    				print('#####\nEvaluation --- LER: {} %\n#####'.format(ler*100))
+
+    		if epochs > 0: epochs -= 1
+
+   	except KeyboardInterrupt:
+
+   		train_sess.close()
+   		eval_sess.close()
 
 
-
-
-
+   	train_sess.close()
+   	eval_sess.close()
