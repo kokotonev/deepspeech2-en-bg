@@ -5,10 +5,12 @@ import os
 import time
 import utils
 import argparse
+import numpy as np
 import soundfile as sf
 import tensorflow as tf 
 
 
+from config import hparams
 from model import Model, model_modes
 
 
@@ -18,7 +20,7 @@ def infer():
     arg_p = argparse.ArgumentParser()
 
     # Adding an expected argument
-    arg_p.add_argument('-af', '--audio-file', required=True, type=str)
+    arg_p.add_argument('-af', '--audiofile', required=True, type=str)
 
     # Parsing the arguments passed by the user
     args = arg_p.parse_args()
@@ -27,13 +29,13 @@ def infer():
     infer_sess = tf.Session()
 
     # Creating an inference model
-    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-0', infer_sess, model_modes.INFER)
+    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-20', infer_sess, model_modes.INFER)
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
     output_mapping = utils.load_output_mapping(hparams.dataset)
 
     # Reading the audio file from the path passed as a command line argument
-    audio, sr = sf.read(args.audio-file)
+    audio, sr = sf.read(args.audiofile)
 
     # Converting the audio to a spectrogram (feature representation)
     features = utils.compute_log_linear_spectrogram(audio, sr, window_size=20, step_size=10)
@@ -49,15 +51,18 @@ def infer():
     # Performing decoding ---> returns a ...
     decoded = model.infer(features_padded, infer_sess)
 
-    print(decoded)
+    # print(decoded)
+    # print('###')
+    # print(decoded[0][1])
+    # print(output_mapping)
+    # print('---end')
 
-    print('---end')
 
-    # # Converting transcription IDs ---> Text
-    # text_prediction = utils.ids_to_text(decoded.values, output_mapping)
+    # Converting transcription IDs ---> Text
+    text_prediction = utils.ids_to_text(decoded[0][1], output_mapping)
 
 
-    # print('\n\n###############\nTranscription: {}\nTook {} seconds.'.format(text_prediction, time.time()-start_time))
+    print('\n\n###############\nTranscription: {}\nTook {} seconds.'.format(text_prediction, time.time()-start_time))
 
 
 
