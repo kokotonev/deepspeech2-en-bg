@@ -14,21 +14,25 @@ from config import hparams
 from tensorboard import default as tb_default
 from tensorboard import program as tb_program
 
+
+from tensorflow.python import debug as tf_debug
+
+
 # Removes nodes from the default graph and reset it
 tf.reset_default_graph()
 
 
 if __name__ == '__main__':
 
-	
-	#############################
+    
+    #############################
     ###  GENERAL PREPARATION  ###
     #############################
 
 
     # Checking for an existing logging directory and deleting it if it exists
     if os.path.exists(hparams.log_dir):
-    	shutil.rmtree(hparams.log_dir)
+        shutil.rmtree(hparams.log_dir)
 
     # Creating a new logging directory
     os.makedirs(hparams.log_dir)
@@ -37,7 +41,7 @@ if __name__ == '__main__':
     ### CONFIGURE TENSORBOARD ###
     #
     #
-    #		TO DO !!!
+    #       TO DO !!!
     #
     #
     ############################
@@ -90,26 +94,26 @@ if __name__ == '__main__':
 
     # Pulling some hyper-parameters from the config file
     epochs = hparams.n_epochs
-    batch_sie = hparams.batch_size
+    batch_size = hparams.batch_size
     steps_per_checkpoint = hparams.steps_per_checkpoint
     checkpoints_dirpath = hparams.checkpoints_dirpath
 
     if not os.path.exists(checkpoints_dirpath):
-    	os.makedirs(checkpoints_dirpath)
+        os.makedirs(checkpoints_dirpath)
 
     checkpoints_path = os.path.join(checkpoints_dirpath, 'checkpoint')
 
     # Creating a training model object
     with train_graph.as_default():
-    	with tf.device(device):
-    		training_model = Model(hparams, model_modes.TRAIN)
-    		variables_initializer = tf.global_variables_initializer()
+        with tf.device(device):
+            train_model = Model(hparams, model_modes.TRAIN)
+            variables_initializer = tf.global_variables_initializer()
 
 
     # Creating an evaluation model object
     with eval_graph.as_default():
-    	with tf.device(device):
-    		eval_model = Model(hparams, model_modes.EVAL)
+        with tf.device(device):
+            eval_model = Model(hparams, model_modes.EVAL)
 
 
     # Creating summary logging file writers ---> will be populated later with methods like .add_summary()
@@ -125,11 +129,13 @@ if __name__ == '__main__':
 
     # Creating training and evaluation sessions
     train_sess = tf.Session(graph=train_graph)
-    eval_sess = tf.Session(graph=eval_sess)
+    train_sess = tf_debug.TensorBoardDebugWrapperSession(train_sess, "Kokovich-2.local:6064")
+
+    eval_sess = tf.Session(graph=eval_graph)
+    eval_sess = tf_debug.TensorBoardDebugWrapperSession(eval_sess, "Kokovich-2.local:6064")
 
     # Initializing all variables in the model
     train_sess.run(variables_initializer)
-
 
     # Setting the global step and getting current time when training starts
     global_step = 0
@@ -144,7 +150,7 @@ if __name__ == '__main__':
 
 
 
-	##################################
+    ##################################
     ####    TRAINING EXECUTION    ####
     ##################################
 
@@ -153,55 +159,58 @@ if __name__ == '__main__':
     # Run until interrupted by the keyboard (user)
     try:
 
-    	while epochs:
+      while epochs:
 
-    		# The number of the current epoch = total epoch from config file - epochs left to run
-    		current_epoch = hparams.n_epochs - epochs
+        # The number of the current epoch = total epoch from config file - epochs left to run
+        current_epoch = hparams.n_epochs - epochs
 
-    		# Dividng the training data into batches and looping through them
-    		for i in range(int(len(train_audio)/batch_size)):
+        # Dividng the training data into batches and looping through them
+        for i in range(int(len(train_audio)/batch_size)):
+            print('--{}'.format(i))
 
-    			batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
-    			batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
+            batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
+            batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
 
-    			# Returns the cost value and the summary
-    			cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
+            # Returns the cost value and the summary
+            cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
 
-    			# Updating the global step
-    			global_step += batch_size
+            # Updating the global step
+            global_step += batch_size
 
-    			# Adding summary to the training logs
-    			training_logger.add_summary(summary, global_step=global_step)
+            # Adding summary to the training logs
+            training_logger.add_summary(summary, global_step=global_step)
 
-    			print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - start_time))
-
-
-    			# If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
-    			if global_step % steps_per_checkpoint == 0:
-
-    				print('Checkpointing... (Global step = {})'.format(global_step))
-
-    				# Saving a checkpoint after a certain number of iterations
-    				current_checkpoint = train_model.saver.save(train_sess, checkpoints_path, global_step=global_step)
-    				
-    				# Immediately restorint the saved model to evaluate it!
-    				eval_model.saver.restore(eval_sess, current_checkpoint)
-
-    				# EVALUATING THE MODEL AT CHECKPOINT
-    				ler, summary = eval_model.eval(batch_train_audio, batch_train_labels, eval_sess)
-
-    				# Adding summary to the evaluation logs
-    				eval_logger.add_summary(summary, global_step=global_step)
-
-    				print('#####\nEvaluation --- LER: {} %\n#####'.format(ler*100))
-
-    		if epochs > 0: epochs -= 1
-
-   	except KeyboardInterrupt:
-
-   		train_sess.close()
-   		eval_sess.close()
+            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - start_time))
 
 
-   	train_sess.close()
-   	eval_sess.close()
+            # If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
+            if global_step % steps_per_checkpoint == 0:
+
+                print('Checkpointing... (Global step = {})'.format(global_step))
+
+                # Saving a checkpoint after a certain number of iterations
+                current_checkpoint = train_model.saver.save(train_sess, checkpoints_path, global_step=global_step)
+                    
+                # Immediately restorint the saved model to evaluate it!
+                eval_model.saver.restore(eval_sess, current_checkpoint)
+
+                # EVALUATING THE MODEL AT CHECKPOINT
+                ler, summary = eval_model.eval(batch_train_audio, batch_train_labels, eval_sess)
+
+                # Adding summary to the evaluation logs
+                eval_logger.add_summary(summary, global_step=global_step)
+
+                tf.summary.merge_all()
+
+                print('#####\nEvaluation --- LER: {} %\n#####'.format(ler*100))
+
+        if epochs > 0: epochs -= 1
+
+    except KeyboardInterrupt:
+
+      train_sess.close()
+      eval_sess.close()
+
+
+    train_sess.close()
+    eval_sess.close()
