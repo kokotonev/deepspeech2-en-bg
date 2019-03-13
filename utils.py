@@ -8,6 +8,16 @@ import numpy as np
 import tensorflow as tf
 
 
+def ids_to_text(sequence, mapping):
+
+	words = []
+	for char in sequence:
+		for k, v in mapping.items():
+			if char == v:
+				words.append(k)
+				break
+	return ''.join(words)
+
 # Computing the actual sequence lengths without the padding for all examples in a batch
 def compute_seq_lens(input):
 
@@ -28,7 +38,7 @@ def pad_sequences(sequences, max_len):
 
 	for seq in sequences:
 		# Creating zero-filled vectors of length n_features to make all sequences equal in length
-		padding = [zeros(len(seq[1])) for _ in range(max_len - len(seq))]
+		padding = [np.zeros(len(seq[1])) for _ in range(max_len - len(seq))]
 
 		if len(padding) > 0:
 			padded_sequences.append(np.concatenate((seq, padding), axis=0))
