@@ -129,10 +129,10 @@ if __name__ == '__main__':
 
     # Creating training and evaluation sessions
     train_sess = tf.Session(graph=train_graph)
-    train_sess = tf_debug.TensorBoardDebugWrapperSession(train_sess, "Kokovich-2.local:6064")
+    # train_sess = tf_debug.TensorBoardDebugWrapperSession(train_sess, "Kokovich-2.local:6064")
 
     eval_sess = tf.Session(graph=eval_graph)
-    eval_sess = tf_debug.TensorBoardDebugWrapperSession(eval_sess, "Kokovich-2.local:6064")
+    # eval_sess = tf_debug.TensorBoardDebugWrapperSession(eval_sess, "Kokovich-2.local:6064")
 
     # Initializing all variables in the model
     train_sess.run(variables_initializer)
@@ -159,10 +159,12 @@ if __name__ == '__main__':
     # Run until interrupted by the keyboard (user)
     try:
 
-      while epochs:
+      #while epochs:
+      for ep in range(epochs):
 
-        # The number of the current epoch = total epoch from config file - epochs left to run
-        current_epoch = hparams.n_epochs - epochs
+        # # The number of the current epoch = total epoch from config file - epochs left to run
+        # current_epoch = hparams.n_epochs - epochs
+        current_epoch = ep
 
         # Dividng the training data into batches and looping through them
         for i in range(int(len(train_audio)/batch_size)):
@@ -170,7 +172,7 @@ if __name__ == '__main__':
 
             batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
             batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
-
+            
             # Returns the cost value and the summary
             cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
 
@@ -204,7 +206,9 @@ if __name__ == '__main__':
 
                 print('#####\nEvaluation --- LER: {} %\n#####'.format(ler*100))
 
-        if epochs > 0: epochs -= 1
+            # tf.get_variable_scope().reuse_variables()
+
+        #if epochs > 0: epochs -= 1
 
     except KeyboardInterrupt:
 
