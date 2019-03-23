@@ -150,7 +150,6 @@ class Model(object):
 
 
 
-
         # If in EVALUATION or INFERENCE mode (a.k.a. decoding)
         if self.mode == model_modes.EVAL or self.mode == model_modes.INFER:
 
@@ -202,9 +201,17 @@ class Model(object):
         # Make sure we are in training mode
         assert self.mode == model_modes.TRAIN
 
-        # Train the model with the passed inputs and target labels
-        return sess.run([self.cost, self.optimizer, self.summary], feed_dict={self.inputs: inputs, self.labels: targets})
-
+        try:
+            # Train the model with the passed inputs and target labels
+            return sess.run([self.cost, self.optimizer, self.summary], feed_dict={self.inputs: inputs, self.labels: targets})
+        except tf.errors.AlreadyExistsError as er:
+            print('+++')
+            print(er.error_code)
+            print('---')
+            print(er.message)
+            print('---')
+            print(er.op)
+            print('---')
 
     # A method for evaluating the model
     def eval(self, inputs, targets, sess):
