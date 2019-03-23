@@ -6,6 +6,7 @@ import os
 import numpy as np 
 import utils
 from tqdm import tqdm
+import soundfile as sf
 
 
 def preprocess_bulphonc():
@@ -42,7 +43,7 @@ def preprocess_bulphonc():
 	for root, dirs, files in tqdm(list(os.walk('data/BulPhonC-Version3/speakers'))):
 		if files:
 			for file in files:
-				if file[_4:] == '.wav':
+				if file[-4:] == '.wav':
 					audio, sr = sf.read(os.path.join(root, file))
 					features = utils.compute_log_linear_spectrogram(audio, sr, window_size=20, step_size=10)
 					np.save('data/bulphonc_processed/audio/S{}-{}.npy'.format(root[39:], file[:-4]), features)
