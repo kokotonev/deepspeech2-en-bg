@@ -51,15 +51,16 @@ def infer():
     # Performing decoding ---> returns a ...
     decoded = model.infer(features_padded, infer_sess)
 
-    # print(decoded)
-    # print('###')
+    print(decoded)
     # print(decoded[0][1])
+    print('###')
     # print(output_mapping)
     # print('---end')
 
 
     # Converting transcription IDs ---> Text
     text_prediction = utils.ids_to_text(decoded[0][1], output_mapping)
+    print('---> Text predicition length: {}'.format(len(text_prediction)))
 
 
     print('\n\n###############\nTranscription: {}\nTook {} seconds.'.format(text_prediction, time.time()-start_time))
