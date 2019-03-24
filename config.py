@@ -5,9 +5,13 @@ from tensorflow.contrib.training import HParams
 
 hparams = HParams(
 
-	batch_size = 12,
+	batch_size = 3,
+	n_epochs = 3,
+	steps_per_checkpoint = 10,
+	checkpoints_dirpath = 'model/checkpoints',
 	learning_rate = 0.001,
 	log_dir='logs',	
+	max_data = 0,
 
 
 	# Data config
@@ -16,7 +20,7 @@ hparams = HParams(
 	bulphonc_path='data/bulphonc_processed',
 
 	# CNN config
-	cnn_layers = 1,
+	cnn_layers = 2,
 
 	# RNN config
 	rnn_layers = 3,  # Best: 7 -- possible upgrade
