@@ -7,6 +7,7 @@ from config import hparams
 import numpy as np
 import tensorflow as tf
 
+tf.logging.set_verbosity(tf.logging.WARN)
 
 def ids_to_text(sequence, mapping):
 
