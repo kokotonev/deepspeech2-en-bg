@@ -8,6 +8,8 @@ import shutil
 import numpy as np 
 import tensorflow as tf 
 
+tf.logging.set_verbosity(tf.logging.WARN)
+
 from model import Model, model_modes
 from config import hparams
 
@@ -16,6 +18,7 @@ from tensorboard import program as tb_program
 
 
 from tensorflow.python import debug as tf_debug
+
 
 
 # Removes nodes from the default graph and reset it
@@ -38,15 +41,6 @@ if __name__ == '__main__':
     os.makedirs(hparams.log_dir)
 
 
-    ### CONFIGURE TENSORBOARD ###
-    #
-    #
-    #       TO DO !!!
-    #
-    #
-    ############################
-
-
     # Creating the graph structures for training and evaluation
     train_graph = tf.Graph()
     eval_graph = tf.Graph()
@@ -57,7 +51,7 @@ if __name__ == '__main__':
     ###  LOADING THE TRAINING DATA  ###
     ###################################
 
-    print('Loading data...')
+    print('Loading data...\n')
 
     # Loading the training and testing data (including audio and transcriptions)
     # Transcriptions loaded as arrays of strings ---> e.g. ['0', '1', '2'] for 'abc'
@@ -79,7 +73,7 @@ if __name__ == '__main__':
     # Defining the number of frequency bins
     hparams.n_features = train_audio.shape[2]
 
-
+    print('     +++ DATA LOADED +++')
 
 
 
@@ -87,7 +81,7 @@ if __name__ == '__main__':
     ###   INITIALIZING THE MODEL   ###
     ##################################
 
-    print('Initializing model...')
+    print('Initializing model...\n')
 
     # Specifying the processor on which the model will be trained
     device = '/cpu:0'
@@ -145,7 +139,7 @@ if __name__ == '__main__':
     train_model.save(checkpoints_path, train_sess, global_step=0)
 
 
-
+    print('     +++ MODEL INITIALIZED +++')
 
 
 
@@ -169,10 +163,11 @@ if __name__ == '__main__':
         # Dividng the training data into batches and looping through them
         for i in range(int(len(train_audio)/batch_size)):
             print('--{}'.format(i))
+            curr_time = time.time()
 
             batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
             batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
-            
+
             # Returns the cost value and the summary
             cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
 
@@ -182,7 +177,7 @@ if __name__ == '__main__':
             # Adding summary to the training logs
             training_logger.add_summary(summary, global_step=global_step)
 
-            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - start_time))
+            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time.time() - start_time))
 
 
             # If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
