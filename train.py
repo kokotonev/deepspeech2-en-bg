@@ -51,29 +51,43 @@ if __name__ == '__main__':
     ###  LOADING THE TRAINING DATA  ###
     ###################################
 
-    print('Loading data...\n')
+    # print('Loading data...\n')
+    print('General preparation...\n\n')
 
     # Loading the training and testing data (including audio and transcriptions)
     # Transcriptions loaded as arrays of strings ---> e.g. ['0', '1', '2'] for 'abc'
-    train_audio, train_labels, test_audio, test_labels = utils.load_data(hparams.dataset, max_data=hparams.max_data)
+    # train_audio, train_labels, test_audio, test_labels = utils.load_data(hparams.dataset, max_data=hparams.max_data)
+
+    train_files, test_files = utils.load_filenames(hparams.dataset)
+    print(' -> Filenames --- LOADED SUCCESSFULLY')
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
     output_mapping = utils.load_output_mapping(hparams.dataset)
+    print(' -> Output mapping --- LOADED SUCCESSFULLY')
 
     # Defining the output classes -> all characters from the output mapping + the blank character
     hparams.n_classes = len(output_mapping) + 1
+    print(' -> Output classes --- LOADED SUCCESSFULLY')
 
     # Defining the longest of the training examples
-    hparams.input_max_len = max([max([len(x) for x in train_audio]), max([len(x) for x in test_audio])])
+    # hparams.input_max_len = max([max([len(x) for x in train_audio]), max([len(x) for x in test_audio])])
+
+    hparams.input_max_len = utils.calculate_input_max_len(hparams.dataset)
+    print(' -> Maximum input length --- LOADED SUCCESSFULLY')
+
 
     # Padding the sequences so they are all with equal length --> new shape (max_data, max_length, n_features) 
-    train_audio = np.asarray(utils.pad_sequences(train_audio, hparams.input_max_len))
-    test_audio = np.asarray(utils.pad_sequences(test_audio, hparams.input_max_len))
+    # train_audio = np.asarray(utils.pad_sequences(train_audio, hparams.input_max_len))
+    # test_audio = np.asarray(utils.pad_sequences(test_audio, hparams.input_max_len))
 
     # Defining the number of frequency bins
-    hparams.n_features = train_audio.shape[2]
+    # hparams.n_features = train_audio.shape[2]
 
-    print('     +++ DATA LOADED +++')
+    arr = np.load('data/librispeech_processed/train-clean-100/19-198-0000.npy')
+    hparams.n_features = arr[0].shape[1]
+    print(' -> Number of features --- LOADED SUCCESSFULLY')
+
+    # print('     +++ DATA LOADED +++')
 
 
 
@@ -81,7 +95,7 @@ if __name__ == '__main__':
     ###   INITIALIZING THE MODEL   ###
     ##################################
 
-    print('Initializing model...\n')
+    print('\nInitializing model...\n')
 
     # Specifying the processor on which the model will be trained
     device = '/cpu:0'
@@ -139,7 +153,7 @@ if __name__ == '__main__':
     train_model.save(checkpoints_path, train_sess, global_step=0)
 
 
-    print('     +++ MODEL INITIALIZED +++')
+    print('\n\n     +++ MODEL INITIALIZED +++')
 
 
 
@@ -161,12 +175,26 @@ if __name__ == '__main__':
         current_epoch = ep
 
         # Dividng the training data into batches and looping through them
-        for i in range(int(len(train_audio)/batch_size)):
+        for i in range(int(len(train_files)/batch_size)):
             print('--{}'.format(i))
             curr_time = time.time()
 
-            batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
-            batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
+            batch_train_audio = []
+            batch_train_labels = []
+
+            # GET AUDIO FROM FILENAMES
+            if hparams.dataset == 'librispeech':
+                for file in train_files[i*batch_size:(i+1)*batch_size]:
+                    arr = np.load('data/librispeech_processed/train-clean-100/{}'.format(file))
+                    batch_train_audio.append(arr[0])
+                    batch_train_labels.append(arr[1])
+
+            # PAD SEQUENCES
+            batch_train_audio = np.asarray(utils.pad_sequences(batch_train_audio, hparams.input_max_len), dtype=np.float32)
+            batch_train_labels = utils.sparse_tuple_from(np.asarray(batch_train_labels))
+
+            # batch_train_audio = np.asarray(train_audio[i*batch_size:(i+1)*batch_size], dtype=np.float32)
+            # batch_train_labels = utils.sparse_tuple_from(np.asarray(train_labels[i*batch_size:(i+1)*batch_size]))
 
             # Returns the cost value and the summary
             cost, _, summary = train_model.train(batch_train_audio, batch_train_labels, train_sess)
@@ -177,7 +205,16 @@ if __name__ == '__main__':
             # Adding summary to the training logs
             training_logger.add_summary(summary, global_step=global_step)
 
-            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} \nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time.time() - start_time))
+
+            tot = time.time() - start_time
+            h = int(tot/3600)
+            m = int((tot/3600-h)*60)
+            s = int((((tot/3600-h)*60)-m)*60)
+            if h < 10: h = '0{}'.format(h)
+            if m < 10: m = '0{}'.format(m)
+            if s < 10: s = '0{}'.format(s)
+            time_tot = '{}:{}:{}'.format(h, m, s)
+            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} s\nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time.time() - start_time))
 
 
             # If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
