@@ -5,7 +5,7 @@ from tensorflow.contrib.training import HParams
 
 hparams = HParams(
 
-	batch_size = 3,
+	batch_size = 2,
 	n_epochs = 3,
 	steps_per_checkpoint = 10,
 	checkpoints_dirpath = 'model/checkpoints',
