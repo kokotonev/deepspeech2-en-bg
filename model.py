@@ -5,17 +5,16 @@ import os
 import utils
 import pickle
 
-import tensorflow as tf 
 from tensorflow.contrib.rnn import GRUCell, MultiRNNCell
 
+import tensorflow as tf
+import memory_saving_gradients 
 
-#import memory_saving_gradients
-
+# tf.logging.set_verbosity(tf.logging.WARN)
 
 # Clearing the default graph
-tf.reset_default_graph
-
-#tf.__dict__['gradients'] = memory_saving_gradients.gradients_memory
+tf.reset_default_graph()
+tf.__dict__["gradients"] = memory_saving_gradients.gradients_memory
 
 class model_modes:
     
@@ -38,7 +37,7 @@ class Model(object):
 
         # If the system is in inference (actual recognition), change the batch size to 1 so it can recognize immediately
         if self.mode == model_modes.INFER:
-            bath_size = 1
+            batch_size = 1
 
         # Creating placeholders for the input data and the labels
         self.inputs = tf.placeholder(tf.float32, shape=[None, None, self.config.n_features], name='inputs') # Unkown number of audio files, unknown max length, n_features freq bins
@@ -190,7 +189,10 @@ class Model(object):
         obj = cls(hparams, mode)
 
         # Restore a saved model from the passed filepath
-        #obj.saver.restore(sess, checkpoint_path)
+        obj.saver.restore(sess, checkpoint_path)
+
+        # with sess as ses:
+        #     print('@@@@@@@@ ---> {}'.format(obj.conv_weights['W_conv1'].eval()))
 
         return obj
 
@@ -200,6 +202,8 @@ class Model(object):
 
         # Make sure we are in training mode
         assert self.mode == model_modes.TRAIN
+
+        tf.reset_default_graph()
 
         try:
             # Train the model with the passed inputs and target labels
