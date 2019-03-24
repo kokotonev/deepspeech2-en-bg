@@ -9,6 +9,7 @@ import numpy as np
 import soundfile as sf
 import tensorflow as tf 
 
+tf.logging.set_verbosity(tf.logging.WARN)
 
 from config import hparams
 from model import Model, model_modes
@@ -29,7 +30,7 @@ def infer():
     infer_sess = tf.Session()
 
     # Creating an inference model
-    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-20', infer_sess, model_modes.INFER)
+    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-210', infer_sess, model_modes.INFER)
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
     output_mapping = utils.load_output_mapping(hparams.dataset)
