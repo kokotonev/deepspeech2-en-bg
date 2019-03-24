@@ -124,6 +124,55 @@ def compute_log_linear_spectrogram(audio, sample_rate, window_size=10, step_size
 	return feats
 
 
+def load_filenames(dataset):
+
+	if dataset == 'librispeech':
+
+		train_files = []
+		test_files = []
+
+		for file in os.listdir('data/librispeech_processed/train-clean-100'):
+			if file not in ['.', '..', '.DS_Store']:
+				train_files.append(file)
+
+		for file in os.listdir('data/librispeech_processed/test-clean'):
+			if file not in ['.', '..', '.DS_Store']:
+				test_files.append(file)
+
+		return train_files, test_files
+
+
+
+
+def calculate_input_max_len(dataset):
+
+	max_len = 0
+
+	if dataset == 'librispeech':
+
+		# Defining the paths to the train and tests sets for LibriSpeech
+		train_path = os.path.join(hparams.librispeech_path, 'train-clean-100')
+		test_path = os.path.join(hparams.librispeech_path, 'test-clean')
+
+		for file in os.listdir(train_path):
+
+			if file not in ['.','..','.DS_Store']:
+				train_arr = np.load(os.path.join(train_path, file));
+				train_audio_len = train_arr[0].shape[0]
+				if train_audio_len > max_len:
+					max_len = train_audio_len
+
+
+		for file in os.listdir(test_path):
+
+			if file not in ['.','..','.DS_Store']:
+				test_arr = np.load(os.path.join(test_path, file))
+				test_audio_len = test_arr[0].shape[0]
+				if test_audio_len > max_len:
+					max_len = test_audio_len
+
+
+	return max_len
 
 
 
