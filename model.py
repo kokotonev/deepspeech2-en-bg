@@ -162,9 +162,10 @@ class Model(object):
 
         # Calculating the mean label error rate and writing a summary protocol to the event file if in evaluation mode
         if self.mode == model_modes.EVAL:
-            self.ler = tf.reduce_mean(tf.edit_distance(tf.cast(self.decoded[0], tf.int32), self.labels))
-            ler_summary = tf.summary.scalar('label error rate', self.ler)
-            self.summary = tf.summary.merge([ler_summary])
+            with tf.variable_scope("LER_evaluation"):
+                self.ler = tf.reduce_mean(tf.edit_distance(tf.cast(self.decoded[0], tf.int32), self.labels))
+                ler_summary = tf.summary.scalar('label error rate', self.ler)
+                self.summary = tf.summary.merge([ler_summary])
 
 
         # Creating a saver object, which will be used for saving and resotring the variables inside the model.
