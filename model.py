@@ -159,7 +159,6 @@ class Model(object):
                 # ctc_greedy_decoder is special case of ctc_beam_search_decoder with beam_width = 1
                 self.decoded, self.neg_sum_logits = tf.nn.ctc_greedy_decoder(logit, seq_lens)
 
-
         # Calculating the mean label error rate and writing a summary protocol to the event file if in evaluation mode
         if self.mode == model_modes.EVAL:
             with tf.variable_scope("LER_evaluation"):
@@ -169,7 +168,7 @@ class Model(object):
 
 
         # Creating a saver object, which will be used for saving and resotring the variables inside the model.
-        self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver(max_to_keep=None)
 
 
 
@@ -206,17 +205,9 @@ class Model(object):
 
         tf.reset_default_graph()
 
-        try:
-            # Train the model with the passed inputs and target labels
-            return sess.run([self.cost, self.optimizer, self.summary], feed_dict={self.inputs: inputs, self.labels: targets})
-        except tf.errors.AlreadyExistsError as er:
-            print('+++')
-            print(er.error_code)
-            print('---')
-            print(er.message)
-            print('---')
-            print(er.op)
-            print('---')
+        # Train the model with the passed inputs and target labels
+        return sess.run([self.cost, self.optimizer, self.summary], feed_dict={self.inputs: inputs, self.labels: targets})
+
 
     # A method for evaluating the model
     def eval(self, inputs, targets, sess):
@@ -234,9 +225,9 @@ class Model(object):
         # Make sure we are in inference mode
         assert self.mode == model_modes.INFER
 
-        init = tf.global_variables_initializer()
-        sess.run(init)
-        return sess.run(self.decoded, feed_dict={self.inputs: inputs})
+        # init = tf.global_variables_initializer()
+        # sess.run(init)
+        return sess.run([self.decoded], feed_dict={self.inputs: inputs})
 
 
     # A method for saving the model
