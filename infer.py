@@ -30,7 +30,7 @@ def infer():
     infer_sess = tf.Session()
 
     # Creating an inference model
-    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-210', infer_sess, model_modes.INFER)
+    model = Model.load('model/hparams', 'model/checkpoints/checkpoint-85320', infer_sess, model_modes.INFER)
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
     output_mapping = utils.load_output_mapping(hparams.dataset)
@@ -60,7 +60,7 @@ def infer():
 
 
     # Converting transcription IDs ---> Text
-    text_prediction = utils.ids_to_text(decoded[0][1], output_mapping)
+    text_prediction = utils.ids_to_text(decoded[0][0].values, output_mapping)
     print('---> Text predicition length: {}'.format(len(text_prediction)))
 
 
