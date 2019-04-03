@@ -5,11 +5,11 @@ from tensorflow.contrib.training import HParams
 
 hparams = HParams(
 
-	batch_size = 2,
+	batch_size = 6,
 	n_epochs = 3,
-	steps_per_checkpoint = 10,
+	steps_per_checkpoint = 60,
 	checkpoints_dirpath = 'model/checkpoints',
-	learning_rate = 0.001,
+	learning_rate = 0.005,
 	log_dir='logs',	
 	max_data = 0,
 
@@ -24,7 +24,7 @@ hparams = HParams(
 
 	# RNN config
 	rnn_layers = 3,  # Best: 7 -- possible upgrade
-	rnn_size = 128,
+	rnn_size = 64,
 
 	# Decoder config
 	beam_width = 32
