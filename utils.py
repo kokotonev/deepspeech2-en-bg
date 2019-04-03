@@ -147,6 +147,7 @@ def load_filenames(dataset):
 def calculate_input_max_len(dataset):
 
 	max_len = 0
+	filename = ''
 
 	if dataset == 'librispeech':
 
@@ -161,6 +162,7 @@ def calculate_input_max_len(dataset):
 				train_audio_len = train_arr[0].shape[0]
 				if train_audio_len > max_len:
 					max_len = train_audio_len
+					filename = file
 
 
 		for file in os.listdir(test_path):
@@ -170,9 +172,10 @@ def calculate_input_max_len(dataset):
 				test_audio_len = test_arr[0].shape[0]
 				if test_audio_len > max_len:
 					max_len = test_audio_len
+					filename = file
 
 
-	return max_len
+	return max_len, filename
 
 
 
