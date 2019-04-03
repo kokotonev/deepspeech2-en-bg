@@ -34,11 +34,12 @@ if __name__ == '__main__':
 
 
     # Checking for an existing logging directory and deleting it if it exists
-    if os.path.exists(hparams.log_dir):
-        shutil.rmtree(hparams.log_dir)
+    # if os.path.exists(hparams.log_dir):
+    #     shutil.rmtree(hparams.log_dir)
 
     # Creating a new logging directory
-    os.makedirs(hparams.log_dir)
+    if not os.path.exists(hparams.log_dir):
+        os.makedirs(hparams.log_dir)
 
 
     # Creating the graph structures for training and evaluation
@@ -72,7 +73,8 @@ if __name__ == '__main__':
     # Defining the longest of the training examples
     # hparams.input_max_len = max([max([len(x) for x in train_audio]), max([len(x) for x in test_audio])])
 
-    hparams.input_max_len = utils.calculate_input_max_len(hparams.dataset)
+    # hparams.input_max_len, _ = utils.calculate_input_max_len(hparams.dataset)
+    hparams.input_max_len = 2597
     print(' -> Maximum input length --- LOADED SUCCESSFULLY')
 
 
@@ -214,7 +216,7 @@ if __name__ == '__main__':
             if m < 10: m = '0{}'.format(m)
             if s < 10: s = '0{}'.format(s)
             time_tot = '{}:{}:{}'.format(h, m, s)
-            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} s\nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time.time() - start_time))
+            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} s\nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time_tot))
 
 
             # If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
@@ -244,9 +246,10 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
 
-      train_sess.close()
-      eval_sess.close()
+        print('===========\nTotal iterations: {}\nAudio files processed: {}\nTime taken: {}\n==========='.format(i, global_step, time_tot))
+        train_sess.close()
+        eval_sess.close()
 
-
+    print('===========\nTotal iterations: {}\nAudio files processed: {}\nTime taken: {}\n==========='.format(i, global_step, time_tot))
     train_sess.close()
     eval_sess.close()
