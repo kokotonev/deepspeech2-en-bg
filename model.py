@@ -122,7 +122,8 @@ class Model(object):
             logit = tf.matmul(outputs, W_fc) + b_fc
 
             # Reshaping and transposing...
-            logit = tf.transpose(tf.reshape(logit, [batch_size, -1, self.config.n_classes]), (1, 0, 2))
+            logit = tf.reshape(logit, [batch_size, -1, self.config.n_classes])
+            logit = tf.transpose(logit, (1, 0, 2))
 
 
 
@@ -145,12 +146,15 @@ class Model(object):
             self.summary = tf.summary.merge([cost_summary])
 
             # Creating a gradient descent optimizer --> returns an op that updates all trainable_variables to minimize the loss
-            self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
+            # self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
 
 
 
         # If in EVALUATION or INFERENCE mode (a.k.a. decoding)
         if self.mode == model_modes.EVAL or self.mode == model_modes.INFER:
+
+            # logit = tf.transpose(logit, (1, 0, 2))
 
             # Performing beam search decoding on the input sequence (logit) and returning decoded outputs.
             if self.config.beam_width > 0:
