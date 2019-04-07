@@ -126,10 +126,10 @@ def compute_log_linear_spectrogram(audio, sample_rate, window_size=10, step_size
 
 def load_filenames(dataset):
 
-	if dataset == 'librispeech':
+	train_files = []
+	test_files = []
 
-		train_files = []
-		test_files = []
+	if dataset == 'librispeech':
 
 		for file in os.listdir('data/librispeech_processed/train-clean-100'):
 			if file not in ['.', '..', '.DS_Store']:
@@ -141,6 +141,18 @@ def load_filenames(dataset):
 
 		return train_files, test_files
 
+	elif dataset == 'bulphonc':
+
+		all_files = []
+
+		for file in os.listdir('data/bulphonc_processed/audio'):
+			if file not in ['.', '..', '.DS_Store']:
+				all_files.append(file)
+
+		train_files = all_files[:int(0.8*len(all_files))]
+		test_files = all_files[int(0.8*len(all_files)):]
+
+		return train_files, test_files
 
 
 
