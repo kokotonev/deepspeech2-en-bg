@@ -5,13 +5,14 @@ from tensorflow.contrib.training import HParams
 
 hparams = HParams(
 
-	batch_size = 6,
-	n_epochs = 3,
-	steps_per_checkpoint = 60,
+	batch_size = 1,
+	n_epochs = 1000,
+	steps_per_checkpoint = 1,
 	checkpoints_dirpath = 'model/checkpoints',
-	learning_rate = 0.005,
+	learning_rate = 0.003,
 	log_dir='logs',	
 	max_data = 0,
+	load_from_checkpoint = True,
 
 
 	# Data config
