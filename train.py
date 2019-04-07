@@ -60,6 +60,8 @@ if __name__ == '__main__':
     # train_audio, train_labels, test_audio, test_labels = utils.load_data(hparams.dataset, max_data=hparams.max_data)
 
     train_files, test_files = utils.load_filenames(hparams.dataset)
+    train_files = train_files[:1]
+    test_files = test_files[:1]
     print(' -> Filenames --- LOADED SUCCESSFULLY')
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
@@ -111,20 +113,32 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoints_dirpath):
         os.makedirs(checkpoints_dirpath)
 
+    # Creating training and evaluation sessions
+    train_sess = tf.Session(graph=train_graph)
+    # train_sess = tf_debug.TensorBoardDebugWrapperSession(train_sess, "Kokovich-2.local:6064")
+
+    eval_sess = tf.Session(graph=eval_graph)
+    # eval_sess = tf_debug.TensorBoardDebugWrapperSession(eval_sess, "Kokovich-2.local:6064")
+
     checkpoints_path = os.path.join(checkpoints_dirpath, 'checkpoint')
 
     # Creating a training model object
     with train_graph.as_default():
         with tf.device(device):
-            train_model = Model(hparams, model_modes.TRAIN)
-            variables_initializer = tf.global_variables_initializer()
+            if hparams.load_from_checkpoint == True:
+                train_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-539', train_sess, model_modes.TRAIN)
+            else:
+                train_model = Model(hparams, model_modes.TRAIN)
+                variables_initializer = tf.global_variables_initializer()
 
 
     # Creating an evaluation model object
     with eval_graph.as_default():
         with tf.device(device):
-            eval_model = Model(hparams, model_modes.EVAL)
-
+            if hparams.load_from_checkpoint == True:
+                eval_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-539', eval_sess, model_modes.EVAL)
+            else:
+                eval_model = Model(hparams, model_modes.EVAL)
 
     # Creating summary logging file writers ---> will be populated later with methods like .add_summary()
     training_logger = tf.summary.FileWriter(os.path.join(hparams.log_dir, 'train'), graph=train_graph)
@@ -137,15 +151,9 @@ if __name__ == '__main__':
     # config.allow_soft_placement = hparams.allow_soft_placement
 
 
-    # Creating training and evaluation sessions
-    train_sess = tf.Session(graph=train_graph)
-    # train_sess = tf_debug.TensorBoardDebugWrapperSession(train_sess, "Kokovich-2.local:6064")
-
-    eval_sess = tf.Session(graph=eval_graph)
-    # eval_sess = tf_debug.TensorBoardDebugWrapperSession(eval_sess, "Kokovich-2.local:6064")
-
     # Initializing all variables in the model
-    train_sess.run(variables_initializer)
+    if hparams.load_from_checkpoint == False:
+        train_sess.run(variables_initializer)
 
     # Setting the global step and getting current time when training starts
     global_step = 0
@@ -183,11 +191,13 @@ if __name__ == '__main__':
 
             batch_train_audio = []
             batch_train_labels = []
+            filenames = []
 
             # GET AUDIO FROM FILENAMES
             if hparams.dataset == 'librispeech':
                 for file in train_files[i*batch_size:(i+1)*batch_size]:
                     arr = np.load('data/librispeech_processed/train-clean-100/{}'.format(file))
+                    filenames.append(file)
                     batch_train_audio.append(arr[0])
                     batch_train_labels.append(arr[1])
 
@@ -216,7 +226,7 @@ if __name__ == '__main__':
             if m < 10: m = '0{}'.format(m)
             if s < 10: s = '0{}'.format(s)
             time_tot = '{}:{}:{}'.format(h, m, s)
-            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} s\nTime total: {} \n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time_tot))
+            print('~~~ \nEpoch: {} \nGlobal Step: {} \nCost: {} \nTime: {} s\nTime total: {} \nFilenames: {}\n~~~'.format(current_epoch, global_step, cost, time.time() - curr_time, time_tot, filenames))
 
 
             # If the global step is a multiple of steps_per_checkpoint ---> if it is time for a checkpoint
