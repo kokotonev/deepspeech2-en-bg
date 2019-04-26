@@ -60,8 +60,8 @@ if __name__ == '__main__':
     # train_audio, train_labels, test_audio, test_labels = utils.load_data(hparams.dataset, max_data=hparams.max_data)
 
     train_files, test_files = utils.load_filenames(hparams.dataset)
-    train_files = train_files[:1]
-    test_files = test_files[:1]
+    # train_files = train_files[:10]
+    # test_files = test_files[:10]
     print(' -> Filenames --- LOADED SUCCESSFULLY')
 
     # Loading the output mapping (in the form of a dictionary ---> e.g. {'a': 0, 'b': 1, 'c': 2})
@@ -76,7 +76,9 @@ if __name__ == '__main__':
     # hparams.input_max_len = max([max([len(x) for x in train_audio]), max([len(x) for x in test_audio])])
 
     # hparams.input_max_len, _ = utils.calculate_input_max_len(hparams.dataset)
-    hparams.input_max_len = 2597
+    # hparams.input_max_len = 1081 # ---> for LibriSpeech (2597 for full set)
+    # hparams.input_max_len = 1619 # ---> for BulPhonC
+    hparams.input_max_len = 99 # ---> for Speech Commands
     print(' -> Maximum input length --- LOADED SUCCESSFULLY')
 
 
@@ -87,8 +89,16 @@ if __name__ == '__main__':
     # Defining the number of frequency bins
     # hparams.n_features = train_audio.shape[2]
 
-    arr = np.load('data/librispeech_processed/train-clean-100/19-198-0000.npy')
-    hparams.n_features = arr[0].shape[1]
+    if hparams.dataset == 'librispeech':
+        arr = np.load('data/librispeech_processed/train-clean-100/19-198-0000.npy')
+        hparams.n_features = arr[0].shape[1]
+    elif hparams.dataset == 'bulphonc':
+        arr = np.load('data/bulphonc_processed/audio/{}'.format(train_files[0]))
+        hparams.n_features = arr.shape[1]
+    elif hparams.dataset == 'speech_commands':
+        arr = np.load('data/speech_commands_processed/train/backward-1.npy')
+        hparams.n_features = arr.shape[1]
+
     print(' -> Number of features --- LOADED SUCCESSFULLY')
 
     # print('     +++ DATA LOADED +++')
@@ -126,7 +136,7 @@ if __name__ == '__main__':
     with train_graph.as_default():
         with tf.device(device):
             if hparams.load_from_checkpoint == True:
-                train_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-539', train_sess, model_modes.TRAIN)
+                train_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-846400', train_sess, model_modes.TRAIN)
             else:
                 train_model = Model(hparams, model_modes.TRAIN)
                 variables_initializer = tf.global_variables_initializer()
@@ -136,7 +146,7 @@ if __name__ == '__main__':
     with eval_graph.as_default():
         with tf.device(device):
             if hparams.load_from_checkpoint == True:
-                eval_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-539', eval_sess, model_modes.EVAL)
+                eval_model = Model.load('model/hparams', 'model/checkpoints/checkpoint-846400', eval_sess, model_modes.EVAL)
             else:
                 eval_model = Model(hparams, model_modes.EVAL)
 
@@ -200,6 +210,24 @@ if __name__ == '__main__':
                     filenames.append(file)
                     batch_train_audio.append(arr[0])
                     batch_train_labels.append(arr[1])
+
+            elif hparams.dataset == 'bulphonc':
+                for file in train_files[i*batch_size:(i+1)*batch_size]:
+                    audio = np.load('data/bulphonc_processed/audio/{}'.format(file))
+                    label_id = file.split('-')[1][:-4]
+                    label = np.load('data/bulphonc_processed/transcriptions/{}.npy'.format(label_id))
+                    filenames.append(file)
+                    batch_train_audio.append(audio)
+                    batch_train_labels.append(label) 
+
+            elif hparams.dataset == 'speech_commands':
+                for file in train_files[i*batch_size:(i+1)*batch_size]:
+                    audio = np.load('data/speech_commands_processed_reduced/train/{}'.format(file))
+                    label_name = file.split('-')[0]
+                    label = np.load('data/speech_commands_processed_reduced/transcriptions/{}.npy'.format(label_name))
+                    filenames.append(file)
+                    batch_train_audio.append(audio)
+                    batch_train_labels.append(label)
 
             # PAD SEQUENCES
             batch_train_audio = np.asarray(utils.pad_sequences(batch_train_audio, hparams.input_max_len), dtype=np.float32)
