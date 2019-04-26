@@ -70,7 +70,7 @@ class Model(object):
                 #Setting the bias matrix
                 self.conv_biases['b_conv{}'.format(i+1)] = tf.Variable(tf.random_normal([32*(i+1)]), name='b_conv{}'.format(i+1))
 
-                # Update the kernel depth
+                # Update the number of output channels
                 layer_output = 32*(i+1)
 
                 # Applying the convolution layer on the input
@@ -146,9 +146,9 @@ class Model(object):
             self.summary = tf.summary.merge([cost_summary])
 
             # Creating a gradient descent optimizer --> returns an op that updates all trainable_variables to minimize the loss
-            # self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
-            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
-
+            self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
+            # self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.cost)
+            # self.optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config.learning_rate, momentum=0.9).minimize(self.cost)
 
 
         # If in EVALUATION or INFERENCE mode (a.k.a. decoding)
