@@ -1,3 +1,5 @@
+# Utility functions shared by multiple other files
+#
 # Author: Nikola Tonev
 # Date: March 2019
 
@@ -9,15 +11,20 @@ import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.WARN)
 
+
+# Converting a mapped array of numbers back to text using the provided output mapping.
 def ids_to_text(sequence, mapping):
 
 	words = []
+	# Looping through each character in the sentence
 	for char in sequence:
+		# Mapping the character to the keys from the output mapping
 		for k, v in mapping.items():
 			if char == v:
 				words.append(k)
 				break
 	return ''.join(words)
+
 
 # Computing the actual sequence lengths without the padding for all examples in a batch
 def compute_seq_lens(input):
@@ -41,6 +48,7 @@ def pad_sequences(sequences, max_len):
 		# Creating zero-filled vectors of length n_features to make all sequences equal in length
 		padding = [np.zeros(len(seq[1])) for _ in range(max_len - len(seq))]
 
+		# If padding is needed, concatenate it to the sequence and append it to the return array
 		if len(padding) > 0:
 			padded_sequences.append(np.concatenate((seq, padding), axis=0))
 		else:
@@ -50,7 +58,7 @@ def pad_sequences(sequences, max_len):
 	return padded_sequences 
 
 
-# Creating a sparse tensor for the labels (returnin the 3 dense tensors that make up the sparse one)
+# Creating a sparse tensor for the labels (returning the 3 dense tensors that make up the sparse one)
 def sparse_tuple_from(sequences, dtype=np.int32):
 
     indices = []
@@ -67,11 +75,12 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     return indices, values, shape
 
 
-
+# Loading the output mapping for the corresponding data set
 def load_output_mapping(dataset):
 
 	output_mapping = {}
 
+	# Defining the path to the output mapping file
 	if dataset == 'librispeech':
 		om_path = 'data/librispeech/output_mapping_en.txt'
 	elif dataset == 'bulphonc':
@@ -79,7 +88,7 @@ def load_output_mapping(dataset):
 	else:
 		raise ValueError('The chosen dataset is not supported!')
 
-
+	# Populate the output mapping dictionary
 	with open(om_path, 'r') as f:
 		for line in f.readlines():
 			key = line.split(' -> ')[0]
@@ -90,23 +99,16 @@ def load_output_mapping(dataset):
 	return output_mapping
 
 
+# Compute the spectrogram of the passed audio file with based on the passed arguments
 def compute_log_linear_spectrogram(audio, sample_rate, window_size=10, step_size=10, max_freq=None, eps=1e-10):
-
-	# # Making sure the maximum frequency is no larger than half of the sampling frequency.
-	# if max_freq = None:
-	# 	max_freq=sample_rate/2
-	# if max_freq > sample_rate/2:
-	# 	raise ValueError('The highest frequency must be less than half of the sample rate!')
 
 	# Making sure the step size is no bigger than the window size.
 	if step_size > window_size:
 		raise ValueError('The step size should be less than or equal to the window size!')
 
-
 	# Calculating the number of samples per window and per step
 	samples_per_winseg = int(round(0.001*window_size*sample_rate))
 	samples_per_step = int(round(0.001*step_size*sample_rate))
-
 
 	### z-score normalization
 	audio = audio - np.mean(audio)
@@ -124,19 +126,23 @@ def compute_log_linear_spectrogram(audio, sample_rate, window_size=10, step_size
 	return feats
 
 
+# Loading the names for all files in the passed data set
 def load_filenames(dataset):
 
 	train_files = []
 	test_files = []
 
 	if dataset == 'librispeech':
-
+		# Looping through files in the training directory
 		for file in os.listdir('data/librispeech_processed/train-clean-100'):
 			if file not in ['.', '..', '.DS_Store']:
+				# Appending each file to the train_files array
 				train_files.append(file)
 
+		# Looping through file in the testing directory
 		for file in os.listdir('data/librispeech_processed/test-clean'):
 			if file not in ['.', '..', '.DS_Store']:
+				# Appending each file to the test_files array
 				test_files.append(file)
 
 		return train_files, test_files
@@ -145,17 +151,20 @@ def load_filenames(dataset):
 
 		all_files = []
 
+		# Looping through all audio files in the dataset
 		for file in os.listdir('data/bulphonc_processed/audio'):
 			if file not in ['.', '..', '.DS_Store']:
+				# Appending each file to the all_files array
 				all_files.append(file)
 
+		# Splitting all_files into train_files and test_files with the 80%/20% splitting practice
 		train_files = all_files[:int(0.8*len(all_files))]
 		test_files = all_files[int(0.8*len(all_files)):]
 
 		return train_files, test_files
 
 
-
+# Calculate the length of the longest training/testing file from the passed data set
 def calculate_input_max_len(dataset):
 
 	max_len = 0
@@ -167,87 +176,27 @@ def calculate_input_max_len(dataset):
 		train_path = os.path.join(hparams.librispeech_path, 'train-clean-100')
 		test_path = os.path.join(hparams.librispeech_path, 'test-clean')
 
+		# Looping through all training files
 		for file in os.listdir(train_path):
 
 			if file not in ['.','..','.DS_Store']:
 				train_arr = np.load(os.path.join(train_path, file));
 				train_audio_len = train_arr[0].shape[0]
+				# If the current file is longer than the max_len, update max_len
 				if train_audio_len > max_len:
 					max_len = train_audio_len
 					filename = file
 
-
+		# Looping through all testing files
 		for file in os.listdir(test_path):
 
 			if file not in ['.','..','.DS_Store']:
 				test_arr = np.load(os.path.join(test_path, file))
 				test_audio_len = test_arr[0].shape[0]
+				# If the current file is longer than the max_len, update max_len
 				if test_audio_len > max_len:
 					max_len = test_audio_len
 					filename = file
 
 
 	return max_len, filename
-
-
-
-def load_data(dataset, max_data=0, train_size=0.8):
-
-	if dataset == 'librispeech':
-
-		# Defining the paths to the train and tests sets for LibriSpeech
-		train_path = os.path.join(hparams.librispeech_path, 'train-clean-100')
-		test_path = os.path.join(hparams.librispeech_path, 'test-clean')
-
-		# Defininf the max data for training and testing
-		max_data_train = int(max_data*train_size)
-		max_data_test = int(max_data*(1-train_size))
-
-		train_data = []
-		test_data = []
-
-		# Loading training data
-		for file in os.listdir(train_path):
-			
-			# Limiting the max number of files that will be loaded.
-			if max_data > 0 and len(train_data) >= int(max_data_train):
-				train_data = train_data[:max_data_train]
-				break
-
-			arr = np.load(os.path.join(train_path, file))
-			audio = arr[0]
-			label = arr[1]
-			train_data.append((audio, label))
-		
-
-		# Loading test data
-		for file in os.listdir(test_path):
-
-			# Limiting the max number of files that will be loaded.
-			if max_data > 0 and len(test_data) >= int(max_data_test):
-				test_data = test_data[:max_data_test]
-				break
-
-			arr = np.load(os.path.join(test_path, file))
-			audio = arr[0]
-			label = arr[1]
-			test_data.append((audio, label)) 
-
-
-		train_audio = [x[0] for x in train_data]
-		train_labels = [x[1] for x in train_data]
-		test_audio = [x[0] for x in test_data]
-		test_labels = [x[1] for x in test_data]
-
-		return train_audio, train_labels, test_audio, test_labels
-
-
-
-	elif dataset == 'bulphonc':
-
-		# TO DO 
-		pass
-
-
-	else:
-		raise ValueError("Invalid dataset name! Should be either 'librispeech' or 'bulphonc'! ")
