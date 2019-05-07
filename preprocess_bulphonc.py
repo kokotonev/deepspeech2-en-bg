@@ -1,3 +1,6 @@
+# Script for preprocessing the raw wav files and their corresponding transcriptions
+# from BulPhonC to '.npy' format files suitable for the model to read.
+#
 # Author: Nikola Tonev
 # Date: March 2019
 
@@ -34,6 +37,7 @@ def preprocess_bulphonc():
 				lines = f.readlines()
 				transcription = lines[0].strip('\n')
 				transcription_mapped = []
+				# Loop through each letter in the transcription and map it according to the output mapping
 				for l in transcription:
 					transcription_mapped.append(str(output_mapping[l]))
 				np.save('data/bulphonc_processed/transcriptions/{}.npy'.format(filename[:-4]), transcription_mapped)
@@ -44,7 +48,9 @@ def preprocess_bulphonc():
 		if files:
 			for file in files:
 				if file[-4:] == '.wav':
+					# Read the audio file
 					audio, sr = sf.read(os.path.join(root, file))
+					# Compute the spectrogram
 					features = utils.compute_log_linear_spectrogram(audio, sr, window_size=20, step_size=10)
 					np.save('data/bulphonc_processed/audio/S{}-{}.npy'.format(root[39:], file[:-4]), features)
 
