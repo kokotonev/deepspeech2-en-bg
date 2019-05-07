@@ -1,3 +1,6 @@
+# Script for preprocessing the raw wav files and their corresponding transcriptions
+# from Google Speech Commands to '.npy' format files suitable for the model to read.
+#
 # Author: Nikola Tonev
 # Date: April 2019
 
@@ -39,9 +42,11 @@ def preprocess_speech_commands():
 			# Getting the transcription from the folder name
 			transcription = root.split('/')[2]
 			transcription_mapped = []
+			# Looping through each letter in transcription and mapping it according to the output mapping
 			for l in transcription:
 				transcription_mapped.append(str(output_mapping[l]))
 
+			# Saving the transcription	
 			np.save('data/speech_commands_processed_reduced/transcriptions/{}.npy'.format(transcription), transcription_mapped)
 
 			idx = 0
@@ -49,7 +54,9 @@ def preprocess_speech_commands():
 			# Looping through all files in each folder in order to get the audio recordings
 			for file in files:
 				if file[-4:] == '.wav':
+					# Reading the audio file
 					audio, sr = sf.read(os.path.join(root, file))
+					# Computing the spectrogram
 					features = utils.compute_log_linear_spectrogram(audio, sr, window_size=20, step_size=10)
 
 				idx += 1
