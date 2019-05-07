@@ -45,7 +45,6 @@ def infer():
     # Passing features in [] in order to make it three-dimensional (2D --> 3D)
     features_padded = utils.pad_sequences([features], model.config.input_max_len)
 
-
     # Setting the start time for decoding
     start_time = time.time()
 
@@ -53,11 +52,7 @@ def infer():
     decoded = model.infer(features_padded, infer_sess)
 
     print(decoded)
-    # print(decoded[0][1])
     print('###')
-    # print(output_mapping)
-    # print('---end')
-
 
     # Converting transcription IDs ---> Text
     text_prediction = utils.ids_to_text(decoded[0][0].values, output_mapping)
