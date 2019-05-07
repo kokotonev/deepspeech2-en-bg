@@ -1,5 +1,5 @@
 # Author: Nikola Tonev
-# Date: 06 March 2019
+# Date: March 2019
 
 from tensorflow.contrib.training import HParams
 
@@ -13,6 +13,7 @@ hparams = HParams(
 	log_dir='logs',	
 	max_data = 0,
 	load_from_checkpoint = False,
+	checkpoint_num = 88460,
 
 
 	# Data config
