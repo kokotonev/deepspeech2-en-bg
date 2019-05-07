@@ -10,12 +10,12 @@ from tensorflow.contrib.rnn import GRUCell, MultiRNNCell
 import tensorflow as tf
 import memory_saving_gradients 
 
-# tf.logging.set_verbosity(tf.logging.WARN)
-
 # Clearing the default graph
 tf.reset_default_graph()
 tf.__dict__["gradients"] = memory_saving_gradients.gradients_memory
 
+
+# Defining modes of the model
 class model_modes:
     
     TRAIN = 1
@@ -47,13 +47,12 @@ class Model(object):
             # Computing the sequence lengths for all examples in the batch.
             seq_lens = utils.compute_seq_lens(self.inputs)
 
-
-
         # Setting dictionaries to hold wieight and bias matrices for the convolutional layers
         self.conv_weights={}
         self.conv_biases={}
 
 
+        #####################################
         ### CREATING CONVOLUTIONAL LAYERS ###
         with tf.variable_scope("CNN"):
 
@@ -83,7 +82,7 @@ class Model(object):
 
 
 
-
+        ####################
         ### CREATING RNN ###
         with tf.variable_scope("RNN"):
 
@@ -103,13 +102,13 @@ class Model(object):
             # state - a tuple (output_state_fw, output_state_bw) containing the forward and backward final states of BRNN
 
 
-            # ??? Maybe merging the forward and backward layers ???
+            # Merging the forward and backward layers
             outputs = tf.reshape(rnn_outputs, [-1, self.config.rnn_size])
 
 
 
 
-
+        ######################################
         ### CREATING FULLY CONNECTED LAYER ###
         with tf.variable_scope("Fully_Connected"):
 
@@ -126,8 +125,8 @@ class Model(object):
             logit = tf.transpose(logit, (1, 0, 2))
 
 
-
         ####################
+
 
 
 
@@ -194,9 +193,6 @@ class Model(object):
 
         # Restore a saved model from the passed filepath
         obj.saver.restore(sess, checkpoint_path)
-
-        # with sess as ses:
-        #     print('@@@@@@@@ ---> {}'.format(obj.conv_weights['W_conv1'].eval()))
 
         return obj
 
